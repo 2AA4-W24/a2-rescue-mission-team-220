@@ -1,6 +1,8 @@
 package ca.mcmaster.se2aa4.island.team220;
 
 import java.io.StringReader;
+import java.util.Map;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -17,7 +19,16 @@ public class Explorer implements IExplorerRaid {
     private Translator translator;
     private AreaMap map;
 
-    private int count = 0;
+    private String currentState = "start";
+
+    // start
+    private int startCount = 0;
+
+    // findExtreme1Land
+    private int secondCount = 0;
+    private Direction turnDir = Direction.NORTH; // Make this more readable later
+
+    // findExtreme1Water
 
     @Override
     public void initialize(String s) {
@@ -39,32 +50,69 @@ public class Explorer implements IExplorerRaid {
 
     @Override
     public String takeDecision() {
-        JSONObject decision = new JSONObject();
-        JSONObject parameters = new JSONObject();
+        switch (currentState) {
 
-        while (this.count < 4) {
-            if (this.count == 0) {
-                decision.put("action", "scan");
-                this.count++;
-                break;
-            } else if (this.count == 1) {
-                decision.put("action", "fly");
-                this.count++;
-                break;
-            } else if (this.count == 2) {
-                decision.put("action", "echo");
-                decision.put("parameters", parameters.put("direction", "E"));
-                this.count++;
-                break;
-            } else {
-                decision.put("action", "stop");
-                this.count++;
-                break;
-            }
+            case ("start"):
+
+                if (this.startCount == 0) {
+                    this.startCount++;
+                    return this.drone.echoForward();
+                } else {
+
+                    if (map.getForward() == Direction.LAND) {
+                        this.currentState = "findExtreme1Land";
+                    } else {
+                        this.currentState = "findExtreme1Water";
+                    }
+
+                    return this.drone.scan();
+                }
+
+            case ("findExteme1Land"):
+
+                if (this.secondCount == 0) {
+
+                    this.secondCount++;
+                    return this.drone.echoLeft();
+
+                } else if (this.secondCount == 1) {
+
+                    this.secondCount++;
+                    return this.drone.echoRight();
+
+                } else if (this.secondCount == 2) {
+
+                    Integer leftDistance = map.getLeft();
+                    Integer rightDistance = map.getRight();
+
+                    this.secondCount++;
+                    if (leftDistance <= rightDistance) {
+                        this.turnDir = Direction.WEST;
+                        return this.drone.turnLeft();
+                    } else {
+                        this.turnDir = Direction.EAST;
+                        return this.drone.turnRight();
+                    }
+
+                } else if (this.secondCount > 2) {
+
+                    if (this.secondCount % 2 != 0) {
+                        this.secondCount++;
+                        if (this.turnDir == Direction.WEST) {
+                            return this.drone.echoRight();
+                        } else {
+                            return this.drone.echoLeft();
+                        }
+                    } else {
+                        this.secondCount++;
+                        return this.drone.fly();
+                    }
+                }
+
         }
 
-        logger.info("** Decision: {}", decision.toString());
-        return decision.toString();
+        // logger.info("** Decision: {}", decision.toString());
+
     }
 
     @Override

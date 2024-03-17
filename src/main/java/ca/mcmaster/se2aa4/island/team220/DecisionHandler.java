@@ -5,5 +5,16 @@ public class DecisionHandler {
     private State currentState;
 
     public void determineDecision(AreaMap map, Drone drone) {
-    };
+
+        // switch (this.currentState) {
+        // case value:
+
+        // break;
+
+        // default:
+        // break;
+        // }
+
+    }
+
 }
